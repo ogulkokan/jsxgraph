@@ -54,18 +54,27 @@
 				{+classType+}{+data.alias+}
 			</h1>
 
-<!-- ============================== Inheritance tree + ========================== -->
-		<if test="data.bloodline.length">
-			<p class="inheritance-tree">
-			Inheritance: {!
-				var inheritance = data.bloodline.slice().reverse();
-				inheritance.push(data.alias);
-				output += inheritance.join(' -> ');
-			!}
-			</p>
-		</if>
+<!-- ============================== Inheritance tree ========================== -->
 
-<!-- ============================== class summary + ========================== -->
+<if test="data.bloodline.length"><p>
+{!
+    for (var i = data.bloodline.length; i > 0; i--) {
+        for (var j = 0; j < data.bloodline.length - i; j++) {
+            output += '&nbsp;&nbsp;&nbsp;';
+        }
+        output += i < data.bloodline.length ? '&#x21b3; ' : ' ';
+        output += '<strong>' + new Link().toSymbol(data.bloodline[i-1]) + '</strong><br />';
+    }
+    for (var k = 0; k < data.bloodline.length+1; k++) {
+        output += '&nbsp;&nbsp;&nbsp;';
+    }
+    output += '&#x21b3; ';
+    output += '<strong>' + data.alias + '</strong><br /><br />';
+
+!}</p>
+</if>
+
+<!-- ============================== class summary ========================== -->
 			<p class="description">
 				{+resolveLinks(data.classDesc)+}
 
@@ -112,50 +121,69 @@
 			</table>
 			</if>
 
-<!-- ============================== attributes summary + ===================== -->
+<!-- ============================== attributes summary ===================== -->
 			<if test="data.properties.length">
 				{! var ownAttributes = data.properties.filter(function($){return $.memberOf == data.alias && $.isAttribute && !$.isNamespace}).sort(makeSortby("name")); !}
 				<if test="ownAttributes.length">
-					<h2>Attributes Summary</h2>
-					<div class="attributes-list">
+				<table class="summaryTable" cellspacing="0" summary="A summary of the attributes documented in the class {+data.alias+}.">
+					<caption>Attributes Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Field Attributes</th>
+							<th scope="col">Field Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
 					<for each="member" in="ownAttributes">
-						<div class="attribute-item">
-							<strong>{+member.name+}</strong>:
-							{!
-								var flags = [];
-								if (member.isPrivate) flags.push("private");
-								if (member.isInner) flags.push("inner");
-								if (member.isStatic) flags.push("static");
-								if (member.isConstant) flags.push("constant");
-								if (member.deprecated) flags.push("deprecated");
-								if (flags.length) output += " [" + flags.join(", ") + "]";
-							!}
-							{+resolveLinks(summarize(member.desc))+}
-						</div>
+						<tr>
+							<td class="attributes">{!
+								if (member.isPrivate) output += "&lt;private&gt; ";
+								if (member.isInner) output += "&lt;inner&gt; ";
+								if (member.isStatic) output += "&lt;static&gt; ";
+								if (member.isConstant) output += "&lt;constant&gt; ";
+                                if (member.deprecated) output += "&lt;deprecated&gt; ";
+							!}&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								<if test="member.isStatic && member.memberOf != '_global_'">{+member.memberOf+}.</if><b>{+new Link().toSymbol(member.alias).withText(member.name)+}</b>
+								</div>
+								<div class="description">{+resolveLinks(summarize(member.desc))+}</div>
+							</td>
+						</tr>
 					</for>
-					</div>
+					</tbody>
+				</table>
 				</if>
 
 				<if test="data.inheritsFrom.length && !data.isPseudo">
-					<h2>Inherited Attributes</h2>
-					<div class="inherited-attributes-list">
-					{!
-						var borrowedMembers = data.properties.filter(function($) {return $.memberOf != data.alias});
-						var contributors = [...new Set(borrowedMembers.map($ => $.memberOf))];
-						for (var contributor of contributors) {
-							var contributorFields = borrowedMembers
-								.filter($ => $.memberOf === contributor)
-								.sort(makeSortby("name"))
-								.map($ => $.name);
-							
-							output += "<div class='inherited-attribute-item'><strong>From " + contributor + ":</strong> ";
-							output += contributorFields.join(", ");
-							output += "</div>";
-						}
-					!}
-					</div>
+				<dl class="inheritsList">
+				{!
+					var borrowedMembers = data.properties.filter(function($) {return $.memberOf != data.alias});
+
+					var contributers = [];
+					borrowedMembers.map(function($) {if (contributers.indexOf($.memberOf) < 0) contributers.push($.memberOf)});
+					for (var i = 0, l = contributers.length; i < l; i++) {
+						output +=
+							"<dt>Fields borrowed from class "+new Link().toSymbol(contributers[i])+": </dt>"
+							+
+							"<dd>" +
+							borrowedMembers
+							.filter(
+								function($) { return $.memberOf == contributers[i] }
+							)
+							.sort(makeSortby("name"))
+							.map(
+								function($) { return new Link().toSymbol($.alias).withText($.name) }
+							)
+							.join(", ")
+							+
+							"</dd>";
+					}
+				!}
+				</dl>
 				</if>
 			</if>
+
 <!-- ============================== properties summary ===================== -->
 			<if test="data.properties.length">
 				{! var ownProperties = data.properties.filter(function($){return $.memberOf == data.alias && !$.isAttribute && !$.isNamespace}).sort(makeSortby("name")); !}
@@ -219,47 +247,64 @@
 				</if>
 			</if>
 
-<!-- ============================== methods summary + ======================== -->
+<!-- ============================== methods summary ======================== -->
 			<if test="data.methods.length">
-				{! var ownMethods = data.methods.filter(function($){return $.memberOf == data.alias && !$.isNamespace}).sort(makeSortby("name")); !}
+				{! var ownMethods = data.methods.filter(function($){return $.memberOf == data.alias  && !$.isNamespace}).sort(makeSortby("name")); !}
 				<if test="ownMethods.length">
-					<h2>Methods Summary</h2>
-					<div class="methods-list">
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class {+data.alias+}.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
 					<for each="member" in="ownMethods">
-						<div class="method-item">
-							<strong>{+member.name+}</strong>{+makeSignature(member.params)+}:
-							{!
-								var flags = [];
-								if (member.isPrivate) flags.push("private");
-								if (member.isInner) flags.push("inner");
-								if (member.isStatic) flags.push("static");
-								if (member.deprecated) flags.push("deprecated");
-								if (flags.length) output += " [" + flags.join(", ") + "]";
-							!}
-							{+resolveLinks(summarize(member.desc))+}
-						</div>
+						<tr>
+							<td class="attributes">{!
+								if (member.isPrivate) output += "&lt;private&gt; ";
+								if (member.isInner) output += "&lt;inner&gt; ";
+								if (member.isStatic) output += "&lt;static&gt; ";
+                                if (member.deprecated) output += "&lt;deprecated&gt; ";
+							!}&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><if test="member.isStatic && member.memberOf != '_global_'">{+member.memberOf+}.</if><b>{+new Link().toSymbol(member.alias).withText(member.name)+}</b>{+makeSignature(member.params)+}
+								</div>
+								<div class="description">{+resolveLinks(summarize(member.desc))+}</div>
+							</td>
+						</tr>
 					</for>
-					</div>
+					</tbody>
+				</table>
 				</if>
 
 				<if test="data.inheritsFrom.length">
-					<h2>Inherited Methods</h2>
-					<div class="inherited-methods-list">
-					{!
-						var borrowedMembers = data.methods.filter(function($) {return $.memberOf != data.alias});
-						var contributors = [...new Set(borrowedMembers.map($ => $.memberOf))];
-						for (var contributor of contributors) {
-							var contributorMethods = borrowedMembers
-								.filter($ => $.memberOf === contributor)
-								.sort(makeSortby("name"))
-								.map($ => $.name);
-							
-							output += "<div class='inherited-method-item'><strong>From " + contributor + ":</strong> ";
-							output += contributorMethods.join(", ");
-							output += "</div>";
-						}
-					!}
-					</div>
+				<dl class="inheritsList">
+				{!
+					var borrowedMembers = data.methods.filter(function($) {return $.memberOf != data.alias});
+					var contributers = [];
+					borrowedMembers.map(function($) {if (contributers.indexOf($.memberOf) < 0) contributers.push($.memberOf)});
+					for (var i = 0, l = contributers.length; i < l; i++) {
+						output +=
+							"<dt>Methods borrowed from class "+new Link().toSymbol(contributers[i])+": </dt>"
+							+
+							"<dd>" +
+							borrowedMembers
+							.filter(
+								function($) { return $.memberOf == contributers[i] }
+							)
+							.sort(makeSortby("name"))
+							.map(
+								function($) { return new Link().toSymbol($.alias).withText($.name) }
+							)
+							.join(", ")
+							+
+							"</dd>";
+					}
+
+				!}
+				</dl>
 				</if>
 			</if>
 <!-- ============================== events summary ======================== -->
