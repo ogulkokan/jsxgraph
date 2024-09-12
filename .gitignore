@@ -32,4 +32,5 @@ HOWTO-RELEASE.md
 releasetxt.md
 doc/jsdoc-tk/template/.DS_Store
 doc/jsdoc-tk/template/static/.DS_Store
-
+.DS_Store
+doc/jsdoc-tk/.DS_Store
