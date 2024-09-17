@@ -33,8 +33,8 @@ cp doc/jsdoc-tk/plugins/*.js ./node_modules/jsdoc2/app/plugins/
 # Generate file list for documentation
 FILELIST=$(find src -name "*.js" ! -path "*/node_modules/*" ! -path "*/test/*")
 
-# Run node-jsdoc2
-./node_modules/.bin/jsdoc2 -v -p -t=doc/jsdoc-tk/template -d=tmp/docs $FILELIST
+# Run node-jsdoc2 with the new includeLinks flag
+./node_modules/.bin/jsdoc2 -v -p -t=doc/jsdoc-tk/template -d=tmp/docs --includeLinks=false $FILELIST
 
 # Check if docs were generated
 if [ -d "tmp/docs" ]; then

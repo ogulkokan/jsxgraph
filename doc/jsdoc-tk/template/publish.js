@@ -5,7 +5,8 @@ function publish(symbolSet) {
 		outDir:      JSDOC.opt.d || SYS.pwd+"../out/jsdoc/",
 		templatesDir: JSDOC.opt.t || SYS.pwd+"../templates/jsx/",
 		symbolsDir:  "symbols/",
-		srcDir:      "symbols/src/"
+		srcDir:      "symbols/src/",
+		includeLinks: JSDOC.opt.includeLinks !== "false" // Default to true if not specified
 	};
 
 	// is source output is suppressed, just display the links to the source file
@@ -98,7 +99,7 @@ function publish(symbolSet) {
 
 
 		var output = "";
-		output = classTemplate.process(symbol);
+		output = classTemplate.process(symbol, publish.conf);
 
 		IO.saveFile(publish.conf.outDir+"symbols/", ((JSDOC.opt.u)? Link.filemap[symbol.alias] : symbol.alias) + publish.conf.ext, output);
 	}
